@@ -1,6 +1,4 @@
-import pathlib
 import logging
-import os
 
 import pytest
 
