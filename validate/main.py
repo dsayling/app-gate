@@ -5,9 +5,10 @@ import logging
 # globals ALL_DIRS
 ALL_DIRS = {}
 
+
 def get_data(filename: str) -> list:
     """Get data from a file in list of lines.
-    
+
     Returns empty list if not a file or empty
     """
     if not pathlib.Path(filename).exists():
@@ -15,6 +16,7 @@ def get_data(filename: str) -> list:
     with open(filename, "r") as fh:
         text = fh.read().splitlines()
     return text
+
 
 def dir_factory(root: pathlib.Path) -> set:
     """Run the path down and load the directories, also, return them as a list
@@ -28,11 +30,12 @@ def dir_factory(root: pathlib.Path) -> set:
     logging.error(ALL_DIRS.values())
     return ALL_DIRS.values()
 
+
 class Dir(object):
     """Create one of these for every directory in the root.
     """
 
-    def __init__(self,dependencies, owners, path):
+    def __init__(self, dependencies, owners, path):
         self.dependencies = dependencies
         self._direct_owners = owners
         self.path = path
@@ -42,13 +45,13 @@ class Dir(object):
     def __repr__(self):
         return f"Dir<{self.path}, {self._direct_owners}>"
 
-    def contains(self,f):
+    def contains(self, f):
         """Check to see if the directory has the file.
         :returns: bool
         """
         return self.path in f
-    
-    def has_dependency(self,f):
+
+    def has_dependency(self, f):
         """Check to see if the directory has the file.
         :returns: bool
         """
@@ -64,7 +67,7 @@ class Dir(object):
         while True:
             if not parent:
                 break
-            owners.extend(parent.owners) if parent.owners else []
+            owners.extend(parent.owners if parent.owners else [])
             parent = parent.get_parent_directory()
             # if you hit the root, no owners
         self._parent_owners = owners
@@ -85,14 +88,15 @@ class Dir(object):
         """Get the parent directory object by just 
         :returns: bool
         """
-        tmp_path=pathlib.Path(self.path)
+        tmp_path = pathlib.Path(self.path)
         parent_dir = ALL_DIRS.get(f'{tmp_path.parent}/')
         assert parent_dir is not self
         return parent_dir
 
+
 class RealDir(Dir):
 
-    def __init__(self,dependencies, owners, path, root):
+    def __init__(self, dependencies, owners, path, root):
         super().__init__(dependencies, owners, path)
         self.root = root
 
@@ -102,7 +106,6 @@ class RealDir(Dir):
         # terrible pattern but easy here
         existing = ALL_DIRS.get(path)
         if existing:
-            logging.debug(f'found {existing}')
             return existing
         dependencies = get_data(path / 'DEPENDENCIES')
         # load dependencies onto root path
@@ -114,10 +117,10 @@ class RealDir(Dir):
         """check the file's dir, wrt root, and compare with path"""
         v = self.root / f
         return self.path == v.parent and v.is_file()
-    
+
     def has_dependency(self, f):
         """look up depdencies from globals.
-        
+
         warning: you need to instantiate all the directories first.
         :returns: bool
         """
@@ -164,20 +167,23 @@ def check_approval(f, approvers, dirs=None):
             logging.debug(f'{x[0]} approved')
     return all(_[1] for _ in impacted_dirs)
 
+
 def check_approvals(files, approvers, dirs=None):
     """Make sure every file has approval. 
-    
+
     Thread with futures after getting the directory tree.
     Threading to get the path and the dirs wont work since its blocking anyway.
 
     """
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [executor.submit(check_approval, _, approvers, dirs) for _ in files]
+        futures = [executor.submit(
+            check_approval, _, approvers, dirs) for _ in files]
         results = []
         for future in as_completed(futures):
             results.append(future.result())
 
     return all(results)
+
 
 def call_args(args, dirs):
     files = args.files[0]
