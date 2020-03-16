@@ -47,6 +47,11 @@ class zac:
     owners = ['B']
     path = 'z/a/c/'
 
+class v:
+    dependencies = []
+    owners = []
+    path = 'z/a/c/'
+
 class case1:
 #   func('y/file', approvers['A','C']) -> True
 #   func('y/file', approvers['B']) -> True
@@ -153,6 +158,27 @@ class case7:
         (['A','B'], False)
         ]
 
+class case8:
+    # use case where there is no owners
+
+    f=['v/file']
+
+    tests = [
+        ([], False),
+        (['A'], True),
+        (['B'], True),
+        (['C'], True),
+        (['D'], True),
+        (['A','C'], True),
+        (['A','D'], True),
+        (['C','D'], True),
+        (['B','C'], True),
+        (['B','C','D'], True),
+        (['A','C','D'], True),
+        (['A','B'], True)
+        ]
+
+
 
 dirs = [validate.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
         
@@ -162,7 +188,7 @@ def case_factory():
     # files, approvers, expected result
     # func('y/file', approvers['B']) -> True
     cases=[]
-    for c in [case1, case2, case3, case4, case5, case6, case7]:
+    for c in [case1, case2, case3, case4, case5, case6, case7, case8]:
         for t in c.tests:
             cases.append((c.f, t[0], t[1]))
     return cases

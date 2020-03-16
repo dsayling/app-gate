@@ -41,9 +41,6 @@ class Dir(object):
             if not parent:
                 break
         return owners
-            
-
-
 
     def has_approval(self, approvers):
         """Check to see if approvers are allowed to approve this directory.
@@ -64,12 +61,15 @@ class Dir(object):
         logging.debug(f"Parent dir:{parent_dir}, may not be in tree")
         return parent_dir
 
+
 def validate(f, approvers, dirs=None):
     """Make sure all the impacted dirs have approval.
 
     validate('y/file', approvers['A','C']) -> True
     validate('y/file', approvers['B']) -> True
     """
+    if not approvers:
+        return False
     impacted_dirs = []
     dirs = dirs or []
     for d in dirs:
