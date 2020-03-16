@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 
 class Dir(object):
@@ -39,3 +40,20 @@ def validate(f, approvers, dirs=None):
     logging.info(impacted_dirs)
     # check all impacted directories have approval
     return all(_[1] for _ in impacted_dirs)
+
+def validate_approvals(files, approvers, dirs=None):
+    """Make sure every file has approval. 
+    
+    Thread with futures after getting the directory tree.
+    Threading to get the path and the dirs wont work since its blocking anyway.
+
+    """
+    # get dirs, pathlib.Path.cwd()?
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(validate, _, approvers, dirs) for _ in files]
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+        logging.warning(results)
+
+    return all(results)

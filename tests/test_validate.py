@@ -61,6 +61,19 @@ class case2:
         (['B','C'], True),
         (['A','B'], True)
         ]
+    
+class case3:
+    f=['y/file', 'z/file']
+
+    tests = [
+        (['A'], False),
+        (['B'], False),
+        (['C'], False),
+        (['A','C'], True),
+        (['B','C'], True),
+        (['A','B'], False)
+        ]
+
 
 dirs = [validate.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z]]
         
@@ -70,14 +83,14 @@ def case_factory():
     # files, approvers, expected result
     # func('y/file', approvers['B']) -> True
     cases=[]
-    for c in [case1, case2]:
+    for c in [case1, case2, case3]:
         for t in c.tests:
             cases.append((c.f, t[0], t[1]))
     return cases
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory())
 def test_it(files, approvers, expected):
-    assert expected == validate.validate(files[0], approvers, dirs)
+    assert expected == validate.validate_approvals(files, approvers, dirs)
 
 
 
