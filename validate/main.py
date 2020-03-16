@@ -4,6 +4,17 @@ import logging
 
 ALL_DIRS = {}
 
+def get_data(filename: str) -> list:
+    """Get data from a file in list of lines.
+    
+    Returns empty list if not a file or empty
+    """
+    if not pathlib.Path(filename).exists:
+        return []
+    with open(filename, "r") as fh:
+        text = fh.read().splitlines()
+    return text
+
 class Dir(object):
     """Create one of these for every directory in the root.
     """
@@ -12,6 +23,14 @@ class Dir(object):
         self._direct_owners = owners
         self.path = path
         ALL_DIRS[path] = self
+    
+    @classmethod
+    def from_path(cls, path):
+        """Provide a path, open the files if there."""
+        dependencies = get_data(path / 'DEPENDENCIES')
+        owners = get_data(path / 'OWNERS')
+        return cls(dependencies, owners, path)
+
 
     def __repr__(self):
         return f"Dir[{self.path}, {self._direct_owners}]"

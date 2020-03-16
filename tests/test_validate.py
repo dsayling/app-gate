@@ -10,12 +10,15 @@
 #   func('x/file', approvers['C']) -> False
 
 import logging
+import os
+import pathlib
+
 from validate import main
 
 import pytest
 
 logging.basicConfig(level = logging.DEBUG)
-
+TEST_ROOT=pathlib.Path(__file__).parent / 'repo_root'
 
 class x:
     dependencies = ['y',]
@@ -177,24 +180,37 @@ class case8:
         (['A','C','D'], True),
         (['A','B'], True)
         ]
+    
+class realcase1:
+## validate_approvals 
+## --approvers alovelace,ghopper 
+## --changed-files src/com/twitter/follow/Follow.java,src/com/twitter/user/User.java
+## True
+
+    f=['src/com/twitter/follow/Follow.java', 'src/com/twitter/user.java']
+
+    tests = [
+        (['alovelace','ghopper'],True),
+        ]
+
 
 
 
 dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
         
 
-def case_factory():
+def case_factory(cs=[case1, case2, case3, case4, case5, case6, case7, case8]):
     # test case factory
     # files, approvers, expected result
     # func('y/file', approvers['B']) -> True
     cases=[]
-    for c in [case1, case2, case3, case4, case5, case6, case7, case8]:
+    for c in cs:
         for t in c.tests:
             cases.append((c.f, t[0], t[1]))
     return cases
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory())
-def test_it(files, approvers, expected):
+def test_main(files, approvers, expected):
     assert expected == main.check_approvals(files, approvers, dirs)
 
 @pytest.mark.parametrize("base, parent", [('z/a/c','z/a/'),('z/a/','z/'),('z/',None)])
@@ -202,3 +218,9 @@ def test_parent(base, parent):
     base=main.ALL_DIRS.get('z/a/c/')
     parent=main.ALL_DIRS.get('z/a/')
     assert base.get_parent_directory() == parent
+
+def test_from_path():
+    d = main.Dir.from_path(TEST_ROOT / 'src/com/twitter/follow/')
+    assert d.owners == ['alovelace', 'ghopper']
+    assert d.dependencies == ['src/com/twitter/user']
+    assert d.get_parent_directory() == None
