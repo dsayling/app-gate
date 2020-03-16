@@ -40,12 +40,12 @@ class za:
 class zab:
     dependencies = ['z/a/c']
     owners = ['D']
-    path = 'z/a/b'
+    path = 'z/a/b/'
 
 class zac:
     dependencies = []
     owners = ['B']
-    path = 'z/a/c'
+    path = 'z/a/c/'
 
 class case1:
 #   func('y/file', approvers['A','C']) -> True
@@ -162,7 +162,7 @@ def case_factory():
     # files, approvers, expected result
     # func('y/file', approvers['B']) -> True
     cases=[]
-    for c in [case1, case2, case3, case4, case5, case6]:
+    for c in [case1, case2, case3, case4, case5, case6, case7]:
         for t in c.tests:
             cases.append((c.f, t[0], t[1]))
     return cases
@@ -171,6 +171,8 @@ def case_factory():
 def test_it(files, approvers, expected):
     assert expected == validate.validate_approvals(files, approvers, dirs)
 
-
-
-
+@pytest.mark.parametrize("base, parent", [('z/a/c','z/a/'),('z/a/','z/'),('z/',None)])
+def test_parent(base, parent):
+    base=validate.ALL_DIRS.get('z/a/c/')
+    parent=validate.ALL_DIRS.get('z/a/')
+    assert base.get_parent_directory() == parent
