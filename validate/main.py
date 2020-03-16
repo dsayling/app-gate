@@ -18,16 +18,18 @@ def get_data(filename: str) -> list:
 def dir_factory(root: pathlib.Path) -> list:
     """Run the path down and load the directories, also, return them as a list
     """
+    logging.debug(f'{root} factory')
     dirs = []
     for d in root.glob('**'):
         if d.is_dir:
-            dirs.append(RealDir.from_path(d))
+            dirs.append(RealDir.from_path(d, root))
     return dirs
 
 
 class Dir(object):
     """Create one of these for every directory in the root.
     """
+
     def __init__(self,dependencies, owners, path):
         self.dependencies = dependencies
         self._direct_owners = owners
@@ -36,7 +38,7 @@ class Dir(object):
         ALL_DIRS[path] = self
 
     def __repr__(self):
-        return f"Dir[{self.path}, {self._direct_owners}]"
+        return f"Dir<{self.path}, {self._direct_owners}>"
 
     def contains(self,f):
         """Check to see if the directory has the file.
@@ -52,15 +54,16 @@ class Dir(object):
 
     @property
     def owners(self):
+        """Navigate the owners tree"""
         if self._parent_owners:
             return self._parent_owners
-        parent = self
+        parent = self.get_parent_directory()
         owners = self._direct_owners[:]
         while True:
-            parent = parent.get_parent_directory()
             if not parent:
                 break
             owners.extend(parent.owners) if parent.owners else []
+            parent = parent.get_parent_directory()
             # if you hit the root, no owners
         logging.warning(f'{self} has {owners}')
         self._parent_owners = owners
@@ -70,7 +73,6 @@ class Dir(object):
         """Check to see if approvers are allowed to approve this directory.
         :returns: bool
         """
-        logging.debug(approvers)
         if not self.owners:
             return True
         for a in approvers:
@@ -84,23 +86,48 @@ class Dir(object):
         """
         tmp_path=pathlib.Path(self.path)
         parent_dir = ALL_DIRS.get(f'{tmp_path.parent}/')
+        assert parent_dir is not self
         return parent_dir
 
 class RealDir(Dir):
 
+    def __init__(self,dependencies, owners, path, root):
+        super().__init__(dependencies, owners, path)
+        self.root = root
+
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path, root):
         """Provide a path, open the files if there."""
         dependencies = get_data(path / 'DEPENDENCIES')
+        # load dependencies onto root path
+        dependencies = [root / _ for _ in dependencies]
         owners = get_data(path / 'OWNERS')
-        return cls(dependencies, owners, path)
+        return cls(dependencies, owners, path, root)
 
     def contains(self, f):
-        try:
-            next(self.path.glob(f))
-        except StopIteration:
-            return False
-        return True
+        """check the file's dir, wrt root, and compare with path"""
+        v = self.root / f
+        return self.path == v.parent
+    
+    def has_dependency(self, f):
+        """look up depdencies from globals.
+        
+        warning: you need to instantiate all the directories first.
+        :returns: bool
+        """
+        dep_dirs = [ALL_DIRS.get(x) for x in self.dependencies]
+        for r in dep_dirs:
+            if r.contains(f):
+                return True
+        return False
+
+    def get_parent_directory(self):
+        """Get the parent directory object by just taking that paretn pathlib and get from glogals. 
+        warning: you need to instantiate all the directories first.
+        :returns: bool
+        """
+        parent_dir = ALL_DIRS.get(self.path.parent)
+        return parent_dir
 
 
 def check_approval(f, approvers, dirs=None):

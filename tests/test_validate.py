@@ -207,9 +207,9 @@ def test_parent(base, parent):
     assert base.get_parent_directory() == parent
 
 def test_from_path():
-    d = main.RealDir.from_path(TEST_ROOT / 'src/com/twitter/follow/')
+    d = main.RealDir.from_path(TEST_ROOT / 'src/com/twitter/follow/', TEST_ROOT)
     assert d._direct_owners == ['alovelace', 'ghopper']
-    assert d.dependencies == ['src/com/twitter/user']
+    assert any(['src/com/twitter/user' in str(_) for _ in d.dependencies])
     assert d.get_parent_directory() == None
 
 def test_real_traverse():
@@ -231,8 +231,8 @@ class AcceptCase2:
     tests = [
         (['alovelace'], False),
         (['eclarke'], False),
-        (['eclarke', 'alovelace'], False),
-        ([''], False),
+        (['eclarke', 'alovelace'], True),
+        ([], False),
         ]
 
 class AcceptCase3:
@@ -251,6 +251,5 @@ def test_owners():
 @pytest.mark.parametrize("files,approvers,expected", case_factory([AcceptCase1, AcceptCase2, AcceptCase3]))
 def test_real(files, approvers, expected):
     main.ALL_DIRS = {}  # hack to reset, love references
-    test_root = TEST_ROOT
-    dirs = main.dir_factory(test_root)
+    dirs = main.dir_factory(TEST_ROOT)
     assert expected == main.check_approvals(files, approvers, dirs)

@@ -21,7 +21,7 @@ def run_cmd(cmd, cwd=TEST_ROOT):
     response = subprocess.run(cmd.split(' '), cwd=cwd, capture_output=True, text=True)
     logging.debug(response.stdout)
     logging.debug(response.stderr)
-    return response.stdout
+    return response.stdout.strip()
 
 class TestAccept(unittest.TestCase):
 
@@ -42,15 +42,16 @@ class TestAccept(unittest.TestCase):
         result = ""
         cmd = "validate_approvals --approvers alovelace,ghopper --changed-files src/com/twitter/follow/Follow.java,src/com/twitter/user/User.java"
         result = run_cmd(cmd)
-        ##
         assert result == "Approved"
+
     def test_1(self):
         """
         $ validate_approvals --approvers alovelace --changed-files src/com/twitter/follow/Follow.java
         Insufficient approvals
         """
         result = ""
-        ##
+        cmd='validate_approvals --approvers alovelace --changed-files src/com/twitter/follow/Follow.java'
+        result = run_cmd(cmd)
         assert result == "Insufficient approvals"
 
     def test_2(self):
@@ -59,7 +60,8 @@ class TestAccept(unittest.TestCase):
         Insufficient approvals
         """
         result = ""
-        ##
+        cmd='validate_approvals --approvers eclarke --changed-files src/com/twitter/follow/Follow.java'
+        result = run_cmd(cmd)
         assert result == "Insufficient approvals"
 
     def test_3(self):
@@ -68,7 +70,8 @@ class TestAccept(unittest.TestCase):
         Approved
         """
         result = ""
-        ##
+        cmd='validate_approvals --approvers alovelace,eclarke --changed-files src/com/twitter/follow/Follow.java'
+        result = run_cmd(cmd)
         assert result == "Approved"
 
     def test_4(self):
@@ -77,5 +80,6 @@ class TestAccept(unittest.TestCase):
         Approved
         """
         result = ""
-        ##
+        cmd='validate_approvals --approvers mfox --changed-files src/com/twitter/tweet/Tweet.java'
+        result = run_cmd(cmd)
         assert result == "Approved"
