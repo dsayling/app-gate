@@ -10,13 +10,17 @@ $ validate_approvals --approvers alovelace,ghopper --changed-files src/com/twitt
 import subprocess
 import os
 import unittest
+import logging
 
+logging.basicConfig(level = logging.DEBUG)
 TEST_ROOT=os.path.join(os.path.dirname(__file__), 'repo_root')
 
 
 def run_cmd(cmd, cwd=TEST_ROOT):
     """Runs and returns stdout"""
     response = subprocess.run(cmd.split(' '), cwd=cwd, capture_output=True, text=True)
+    logging.debug(response.stdout)
+    logging.debug(response.stderr)
     return response.stdout
 
 class TestAccept(unittest.TestCase):
@@ -37,7 +41,7 @@ class TestAccept(unittest.TestCase):
         """
         result = ""
         cmd = "validate_approvals --approvers alovelace,ghopper --changed-files src/com/twitter/follow/Follow.java,src/com/twitter/user/User.java"
-        run_cmd(cmd)
+        result = run_cmd(cmd)
         ##
         assert result == "Approved"
     def test_1(self):

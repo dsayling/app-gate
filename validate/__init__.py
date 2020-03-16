@@ -21,3 +21,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if main.check_approvals(args.changed_files, args.approvers, dirs):
         print('Approved')
+    else:
+        print('Insufficient approvals')
