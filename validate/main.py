@@ -9,7 +9,8 @@ def get_data(filename: str) -> list:
     
     Returns empty list if not a file or empty
     """
-    if not pathlib.Path(filename).exists:
+    if not pathlib.Path(filename).exists():
+        logging.debug('no file')
         return []
     with open(filename, "r") as fh:
         text = fh.read().splitlines()

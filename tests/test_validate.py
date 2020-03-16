@@ -196,7 +196,6 @@ class realcase1:
 
 
 
-dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
         
 
 def case_factory(cs=[case1, case2, case3, case4, case5, case6, case7, case8]):
@@ -211,6 +210,7 @@ def case_factory(cs=[case1, case2, case3, case4, case5, case6, case7, case8]):
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory())
 def test_main(files, approvers, expected):
+    dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
     assert expected == main.check_approvals(files, approvers, dirs)
 
 @pytest.mark.parametrize("base, parent", [('z/a/c','z/a/'),('z/a/','z/'),('z/',None)])
@@ -224,3 +224,13 @@ def test_from_path():
     assert d.owners == ['alovelace', 'ghopper']
     assert d.dependencies == ['src/com/twitter/user']
     assert d.get_parent_directory() == None
+
+def test_real_traverse():
+    main.ALL_DIRS = {}  # hack to reset, love references
+    test_root = TEST_ROOT
+    dirs = []
+    for d in test_root.glob('**'):
+        if d.is_dir:
+            dirs.append(main.Dir.from_path(d))
+
+    assert len(dirs) == len(main.ALL_DIRS)
