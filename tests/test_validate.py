@@ -180,20 +180,6 @@ class case8:
         (['A','C','D'], True),
         (['A','B'], True)
         ]
-    
-class realcase1:
-## validate_approvals 
-## --approvers alovelace,ghopper 
-## --changed-files src/com/twitter/follow/Follow.java,src/com/twitter/user/User.java
-## True
-
-    f=['src/com/twitter/follow/Follow.java', 'src/com/twitter/user.java']
-
-    tests = [
-        (['alovelace','ghopper'],True),
-        ]
-
-
 
 
         
