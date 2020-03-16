@@ -16,6 +16,16 @@ def get_data(filename: str) -> list:
         text = fh.read().splitlines()
     return text
 
+def dir_factory(root: pathlib.Path) -> list:
+    """Run the path down and load the directories, also, return them as a list
+    """
+    dirs = []
+    for d in root.glob('**'):
+        if d.is_dir:
+            dirs.append(Dir.from_path(d))
+    return dirs
+
+
 class Dir(object):
     """Create one of these for every directory in the root.
     """

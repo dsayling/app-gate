@@ -228,9 +228,6 @@ def test_from_path():
 def test_real_traverse():
     main.ALL_DIRS = {}  # hack to reset, love references
     test_root = TEST_ROOT
-    dirs = []
-    for d in test_root.glob('**'):
-        if d.is_dir:
-            dirs.append(main.Dir.from_path(d))
+    dirs = main.dir_factory(test_root)
 
     assert len(dirs) == len(main.ALL_DIRS)
