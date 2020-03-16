@@ -10,7 +10,7 @@
 #   func('x/file', approvers['C']) -> False
 
 import logging
-import validate
+from validate import main
 
 import pytest
 
@@ -180,7 +180,7 @@ class case8:
 
 
 
-dirs = [validate.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
+dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
         
 
 def case_factory():
@@ -195,10 +195,10 @@ def case_factory():
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory())
 def test_it(files, approvers, expected):
-    assert expected == validate.validate_approvals(files, approvers, dirs)
+    assert expected == main.check_approvals(files, approvers, dirs)
 
 @pytest.mark.parametrize("base, parent", [('z/a/c','z/a/'),('z/a/','z/'),('z/',None)])
 def test_parent(base, parent):
-    base=validate.ALL_DIRS.get('z/a/c/')
-    parent=validate.ALL_DIRS.get('z/a/')
+    base=main.ALL_DIRS.get('z/a/c/')
+    parent=main.ALL_DIRS.get('z/a/')
     assert base.get_parent_directory() == parent
