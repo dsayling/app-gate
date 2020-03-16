@@ -155,6 +155,8 @@ class case7:
         (['D'], False),
         (['A','C'], True),
         (['A','D'], False),
+        (['D','A'], False),
+        (['D','C'], True),
         (['C','D'], True),
         (['B','C'], True),
         (['B','C','D'], True),
@@ -176,6 +178,7 @@ class case8:
         (['A','C'], True),
         (['A','D'], True),
         (['C','D'], True),
+        (['D','C'], True),
         (['B','C'], True),
         (['B','C','D'], True),
         (['A','C','D'], True),
@@ -232,6 +235,7 @@ class AcceptCase2:
         (['alovelace'], False),
         (['eclarke'], False),
         (['eclarke', 'alovelace'], True),
+        (['alovelace', 'eclarke'], True),
         ([], False),
         ]
 
@@ -250,6 +254,37 @@ def test_owners():
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory([AcceptCase1, AcceptCase2, AcceptCase3]))
 def test_real(files, approvers, expected):
-    main.ALL_DIRS = {}  # hack to reset, love references
     dirs = main.dir_factory(TEST_ROOT)
     assert expected == main.check_approvals(files, approvers, dirs)
+
+@pytest.mark.parametrize("files,approvers,expected", case_factory([AcceptCase1, AcceptCase2, AcceptCase3]))
+def test_real_single(files, approvers, expected):
+    dirs = main.dir_factory(TEST_ROOT)
+    assert expected == main.check_approval(files[0], approvers, dirs)
+
+def test_contains():
+    main.dir_factory(TEST_ROOT)
+    p = TEST_ROOT / 'src/com/twitter/follow/'
+    d = main.ALL_DIRS.get(p)
+    f = TEST_ROOT / 'src/com/twitter/follow/Follow.java'
+    f1 = TEST_ROOT / 'src/com/twitter/follow/OWNERS'
+    f2 = TEST_ROOT / 'src/com/twitter/gah'
+    f3 = TEST_ROOT / 'tests/com/twitter/follow/Follow.java'
+    assert d.contains(f)
+    assert d.contains(f1)
+    assert not d.contains(f2)
+    assert not d.contains(f3)
+
+def test_contains2():
+    main.dir_factory(TEST_ROOT)
+    p = TEST_ROOT / 'src/com/'
+    d = main.ALL_DIRS.get(p)
+    f2 = TEST_ROOT / 'src/com/twitter'
+    f3 = TEST_ROOT / 'tests/com/twitter/follow/Follow.java'
+    f4 = TEST_ROOT / 'src/com/twitter/followa/Follow.java'
+    assert not d.contains(f2)
+    assert not d.contains(f3)
+    assert not d.contains(f3)
+    assert not d.contains(f4)
+
+            

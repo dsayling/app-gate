@@ -14,12 +14,14 @@ import argparse
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--approvers", help="the approvers that have approved", type=str, nargs='+', required=True)
-    parser.add_argument("--changed-files", help="the approvers that have approved", type=str, nargs='+', required=True)
+    parser.add_argument("--approvers", help="the approvers that have approved", 
+                        type=str, required=True)
+    parser.add_argument("--changed-files", help="the changed files", 
+                        type=str, required=True)
     root = pathlib.Path.cwd()
-    dirs = main.dir_factory(root)
     args = parser.parse_args()
-    if main.check_approvals(args.changed_files, args.approvers, dirs):
+    dirs = main.dir_factory(root)
+    if main.call_args(args, dirs):
         print('Approved')
     else:
         print('Insufficient approvals')

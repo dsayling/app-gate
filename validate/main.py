@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pathlib
 import logging
 
+# globals ALL_DIRS
 ALL_DIRS = {}
 
 def get_data(filename: str) -> list:
@@ -15,16 +16,17 @@ def get_data(filename: str) -> list:
         text = fh.read().splitlines()
     return text
 
-def dir_factory(root: pathlib.Path) -> list:
+def dir_factory(root: pathlib.Path) -> set:
     """Run the path down and load the directories, also, return them as a list
     """
-    logging.debug(f'{root} factory')
+    global ALL_DIRS
+    ALL_DIRS = {}
     dirs = []
     for d in root.glob('**'):
-        if d.is_dir:
+        if d.is_dir():
             dirs.append(RealDir.from_path(d, root))
-    return dirs
-
+    logging.error(ALL_DIRS.values())
+    return ALL_DIRS.values()
 
 class Dir(object):
     """Create one of these for every directory in the root.
@@ -65,7 +67,6 @@ class Dir(object):
             owners.extend(parent.owners) if parent.owners else []
             parent = parent.get_parent_directory()
             # if you hit the root, no owners
-        logging.warning(f'{self} has {owners}')
         self._parent_owners = owners
         return set(owners)
 
@@ -98,6 +99,11 @@ class RealDir(Dir):
     @classmethod
     def from_path(cls, path, root):
         """Provide a path, open the files if there."""
+        # terrible pattern but easy here
+        existing = ALL_DIRS.get(path)
+        if existing:
+            logging.debug(f'found {existing}')
+            return existing
         dependencies = get_data(path / 'DEPENDENCIES')
         # load dependencies onto root path
         dependencies = [root / _ for _ in dependencies]
@@ -107,7 +113,7 @@ class RealDir(Dir):
     def contains(self, f):
         """check the file's dir, wrt root, and compare with path"""
         v = self.root / f
-        return self.path == v.parent
+        return self.path == v.parent and v.is_file()
     
     def has_dependency(self, f):
         """look up depdencies from globals.
@@ -117,7 +123,7 @@ class RealDir(Dir):
         """
         dep_dirs = [ALL_DIRS.get(x) for x in self.dependencies]
         for r in dep_dirs:
-            if r.contains(f):
+            if r and r.contains(f):
                 return True
         return False
 
@@ -138,6 +144,8 @@ def check_approval(f, approvers, dirs=None):
     """
     if not approvers:
         return False
+    if ',' in approvers[0]:  # hack, happning on last acceptnace test, idc now!
+        approvers = approvers[0].split(',')
     impacted_dirs = []
     dirs = dirs or []
     for d in dirs:
@@ -147,8 +155,13 @@ def check_approval(f, approvers, dirs=None):
         # check if file in dir.dependncies
         if d.has_dependency(f):
             impacted_dirs.append((d, d.has_approval(approvers)))
-    logging.critical(impacted_dirs)
     # check all impacted directories have approval
+    # logging.warning(f'{impacted}')
+    for x in impacted_dirs:
+        if not x[1]:
+            logging.debug(f'{x[0]} not approved')
+        if x[1]:
+            logging.debug(f'{x[0]} approved')
     return all(_[1] for _ in impacted_dirs)
 
 def check_approvals(files, approvers, dirs=None):
@@ -163,6 +176,14 @@ def check_approvals(files, approvers, dirs=None):
         results = []
         for future in as_completed(futures):
             results.append(future.result())
-        logging.warning(results)
 
     return all(results)
+
+def call_args(args, dirs):
+    files = args.files[0]
+    # files = args.files[0].split(',')
+    approvers = args.approvers[0]
+    # approvers = args.approvers[0].split(',')
+    logging.error(approvers)
+    logging.error(files)
+    return check_approvals(files, approvers, dirs)

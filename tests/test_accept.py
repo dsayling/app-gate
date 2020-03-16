@@ -19,8 +19,6 @@ TEST_ROOT=os.path.join(os.path.dirname(__file__), 'repo_root')
 def run_cmd(cmd, cwd=TEST_ROOT):
     """Runs and returns stdout"""
     response = subprocess.run(cmd.split(' '), cwd=cwd, capture_output=True, text=True)
-    logging.debug(response.stdout)
-    logging.debug(response.stderr)
     return response.stdout.strip()
 
 class TestAccept(unittest.TestCase):
