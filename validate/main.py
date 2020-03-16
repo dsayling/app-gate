@@ -10,7 +10,6 @@ def get_data(filename: str) -> list:
     Returns empty list if not a file or empty
     """
     if not pathlib.Path(filename).exists():
-        logging.debug('no file')
         return []
     with open(filename, "r") as fh:
         text = fh.read().splitlines()
@@ -22,7 +21,7 @@ def dir_factory(root: pathlib.Path) -> list:
     dirs = []
     for d in root.glob('**'):
         if d.is_dir:
-            dirs.append(Dir.from_path(d))
+            dirs.append(RealDir.from_path(d))
     return dirs
 
 
@@ -33,51 +32,48 @@ class Dir(object):
         self.dependencies = dependencies
         self._direct_owners = owners
         self.path = path
+        self._parent_owners = None
         ALL_DIRS[path] = self
-    
-    @classmethod
-    def from_path(cls, path):
-        """Provide a path, open the files if there."""
-        dependencies = get_data(path / 'DEPENDENCIES')
-        owners = get_data(path / 'OWNERS')
-        return cls(dependencies, owners, path)
-
 
     def __repr__(self):
         return f"Dir[{self.path}, {self._direct_owners}]"
 
-    def contains(self,file):
+    def contains(self,f):
         """Check to see if the directory has the file.
         :returns: bool
         """
-        return self.path in file
+        return self.path in f
     
-    def has_dependency(self,file):
+    def has_dependency(self,f):
         """Check to see if the directory has the file.
         :returns: bool
         """
-        return any(dep_path in file for dep_path in self.dependencies)
+        return any(dep_path in f for dep_path in self.dependencies)
 
     @property
     def owners(self):
-        if self._direct_owners:
-            return self._direct_owners   
+        if self._parent_owners:
+            return self._parent_owners
         parent = self
-        owners = []
-        while not owners:
+        owners = self._direct_owners[:]
+        while True:
             parent = parent.get_parent_directory()
-            owners = parent.owners if parent.owners else []
-            # if you hit the root, no owners
             if not parent:
                 break
-        return owners
+            owners.extend(parent.owners) if parent.owners else []
+            # if you hit the root, no owners
+        logging.warning(f'{self} has {owners}')
+        self._parent_owners = owners
+        return set(owners)
 
     def has_approval(self, approvers):
         """Check to see if approvers are allowed to approve this directory.
         :returns: bool
         """
+        logging.debug(approvers)
+        if not self.owners:
+            return True
         for a in approvers:
-            # get dependecy owners at some point
             if a in self.owners:
                 return True
         return False
@@ -88,8 +84,23 @@ class Dir(object):
         """
         tmp_path=pathlib.Path(self.path)
         parent_dir = ALL_DIRS.get(f'{tmp_path.parent}/')
-        logging.debug(f"Parent dir:{parent_dir}, may not be in tree")
         return parent_dir
+
+class RealDir(Dir):
+
+    @classmethod
+    def from_path(cls, path):
+        """Provide a path, open the files if there."""
+        dependencies = get_data(path / 'DEPENDENCIES')
+        owners = get_data(path / 'OWNERS')
+        return cls(dependencies, owners, path)
+
+    def contains(self, f):
+        try:
+            next(self.path.glob(f))
+        except StopIteration:
+            return False
+        return True
 
 
 def check_approval(f, approvers, dirs=None):
@@ -109,7 +120,7 @@ def check_approval(f, approvers, dirs=None):
         # check if file in dir.dependncies
         if d.has_dependency(f):
             impacted_dirs.append((d, d.has_approval(approvers)))
-    logging.info(impacted_dirs)
+    logging.critical(impacted_dirs)
     # check all impacted directories have approval
     return all(_[1] for _ in impacted_dirs)
 
@@ -120,7 +131,6 @@ def check_approvals(files, approvers, dirs=None):
     Threading to get the path and the dirs wont work since its blocking anyway.
 
     """
-    # get dirs, pathlib.Path.cwd()?
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(check_approval, _, approvers, dirs) for _ in files]
         results = []

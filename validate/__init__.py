@@ -19,4 +19,5 @@ if __name__ == "__main__":
     root = pathlib.Path.cwd()
     dirs = main.dir_factory(root)
     args = parser.parse_args()
-    main.check_approvals(args.changed_files, args.approvers, dirs)
+    if main.check_approvals(args.changed_files, args.approvers, dirs):
+        print('Approved')

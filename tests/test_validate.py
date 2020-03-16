@@ -53,7 +53,7 @@ class zac:
 class v:
     dependencies = []
     owners = []
-    path = 'z/a/c/'
+    path = 'v/'
 
 class case1:
 #   func('y/file', approvers['A','C']) -> True
@@ -135,11 +135,12 @@ class case6:
         (['B'], False),
         (['C'], False),
         (['D'], False),
-        (['A','C'], False),
+        (['A','C'], True),
         (['A','D'], False),
         (['B','D'], False),
-        (['B','C'], False),
+        (['B','C'], True),
         (['B','C','D'], True),
+        (['B','C','A'], True),
         (['A','B'], False)
         ]
 
@@ -150,12 +151,12 @@ class case7:
     tests = [
         (['A'], False),
         (['B'], False),
-        (['C'], False),
+        (['C'], True),
         (['D'], False),
-        (['A','C'], False),
+        (['A','C'], True),
         (['A','D'], False),
         (['C','D'], True),
-        (['B','C'], False),
+        (['B','C'], True),
         (['B','C','D'], True),
         (['A','C','D'], True),
         (['A','B'], False)
@@ -196,7 +197,7 @@ def case_factory(cs=[case1, case2, case3, case4, case5, case6, case7, case8]):
 
 @pytest.mark.parametrize("files,approvers,expected", case_factory())
 def test_main(files, approvers, expected):
-    dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab]]
+    dirs = [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab, v]]
     assert expected == main.check_approvals(files, approvers, dirs)
 
 @pytest.mark.parametrize("base, parent", [('z/a/c','z/a/'),('z/a/','z/'),('z/',None)])
@@ -206,8 +207,8 @@ def test_parent(base, parent):
     assert base.get_parent_directory() == parent
 
 def test_from_path():
-    d = main.Dir.from_path(TEST_ROOT / 'src/com/twitter/follow/')
-    assert d.owners == ['alovelace', 'ghopper']
+    d = main.RealDir.from_path(TEST_ROOT / 'src/com/twitter/follow/')
+    assert d._direct_owners == ['alovelace', 'ghopper']
     assert d.dependencies == ['src/com/twitter/user']
     assert d.get_parent_directory() == None
 
@@ -217,3 +218,39 @@ def test_real_traverse():
     dirs = main.dir_factory(test_root)
 
     assert len(dirs) == len(main.ALL_DIRS)
+
+class AcceptCase1:
+    f=['src/com/twitter/follow/Follow.java','src/com/twitter/user/User.java']
+    tests = [
+        (['alovelace', 'ghopper'], True),
+        (['alovelace', 'ghopper', 'mfox'], True),
+        ]
+
+class AcceptCase2:
+    f=['src/com/twitter/follow/Follow.java']
+    tests = [
+        (['alovelace'], False),
+        (['eclarke'], False),
+        (['eclarke', 'alovelace'], False),
+        ([''], False),
+        ]
+
+class AcceptCase3:
+    f=['src/com/twitter/tweet/Tweet.java']
+    tests = [
+        (['mfox'], True),
+        ]
+
+def test_owners():
+    [main.Dir(_.dependencies, _.owners, _.path) for _ in [x, y, z, za, zac, zab, v]]
+    d=main.ALL_DIRS.get(zab.path)
+    assert d.owners == set(['C', 'D'])
+    d=main.ALL_DIRS.get(zac.path)
+    assert d.owners == set(['B', 'C'])
+
+@pytest.mark.parametrize("files,approvers,expected", case_factory([AcceptCase1, AcceptCase2, AcceptCase3]))
+def test_real(files, approvers, expected):
+    main.ALL_DIRS = {}  # hack to reset, love references
+    test_root = TEST_ROOT
+    dirs = main.dir_factory(test_root)
+    assert expected == main.check_approvals(files, approvers, dirs)
