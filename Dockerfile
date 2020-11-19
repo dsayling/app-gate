@@ -1,5 +1,5 @@
 # making this to get some acceptance env
-FROM python:3.7
+FROM python:3.9
 
 # copy the test requirementes as I dont expect that to change
 COPY tests/requirements.txt /workspaces/tests/requirements.txt
